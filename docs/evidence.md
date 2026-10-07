@@ -10,4 +10,4 @@ Paid 10 USDC (due 1): https://stellar.expert/explorer/testnet/tx/254c65c0bfb25dd
 Paid 10 USDC (due 3, via the web page + Freighter): https://stellar.expert/explorer/testnet/tx/ed17cf2ae6330c20fb4ddf9d74ae552b07f1f7fbe7064d83d4ef3230a239c373
 Rejected 9 USDC (due 2, failed on-ledger with WrongAmount, no USDC moved): https://stellar.expert/explorer/testnet/tx/98df0db46ee67e53dad279e574bea57ccfe72593834ac6b8d63f57efc7b2eb81
 CLI simulation of the same attempt: Error(Contract, #5) = WrongAmount
-Demo: TODO
+Demo: https://due-seven-beryl.vercel.app

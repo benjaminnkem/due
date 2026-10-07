@@ -8,6 +8,7 @@ A Soroban contract is the invoice. It fixes the recipient, the asset, the amount
 
 | | |
 | --- | --- |
+| Live demo | https://due-seven-beryl.vercel.app |
 | Network | Stellar testnet |
 | Contract | [`CA37U34JBHVRCIAIHWMZKV4BGMOWLA5Z6EJGGBS6MHOTU7L7WXH2YIHF`](https://stellar.expert/explorer/testnet/contract/CA37U34JBHVRCIAIHWMZKV4BGMOWLA5Z6EJGGBS6MHOTU7L7WXH2YIHF) |
 | Wasm hash | `58d026b3c867d3583f633a4502c9e31ff0cc2d97133eece49ab2116fc63ded48` |
