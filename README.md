@@ -122,13 +122,15 @@ Stack: Next.js, React, TypeScript, Tailwind CSS v4, shadcn/ui on Base UI, `@stel
 
 ## Try it
 
-Reading a due needs no wallet. Paying needs [Freighter](https://www.freighter.app) on the Test Network and testnet USDC.
+Reading a due needs no wallet. Paying needs [Freighter](https://www.freighter.app) in a desktop browser, switched to the **Test Network**.
 
-1. Install Freighter in a desktop browser and switch it to **Test Network**.
-2. Fund the account with [Friendbot](https://friendbot.stellar.org) and add a USDC trustline for the issuer above.
-3. Get testnet USDC from the [Circle faucet](https://faucet.circle.com), choosing Stellar.
-4. Open the page, connect, and pay the seeded due.
-5. Use **Try paying 9 USDC** to watch the contract refuse a wrong amount.
+1. Open the page and connect Freighter.
+2. The page checks your wallet and shows what is missing, with a button for each step:
+   - **No testnet account yet.** Press *Fund with Friendbot* for free test XLM.
+   - **No USDC trustline.** Press *Add USDC trustline* and sign the small transaction.
+   - **Not enough USDC.** Get free testnet USDC from the [Circle faucet](https://faucet.circle.com) (choose Stellar and paste your address), then press *Check again*.
+3. Pay the seeded due.
+4. Use **Try paying 9 USDC** to watch the contract refuse a wrong amount.
 
 ## Run it yourself
 

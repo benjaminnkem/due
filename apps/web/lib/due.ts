@@ -16,6 +16,7 @@ import {
 } from "@stellar/stellar-sdk";
 import {
   CONTRACT_ID,
+  FRIENDBOT_URL,
   HORIZON_URL,
   NETWORK_PASSPHRASE,
   RPC_URL,
@@ -148,16 +149,49 @@ export async function findNextOpenDue(fromId: number): Promise<number | null> {
   return scan(1, fromId);
 }
 
-/** True when the account holds a USDC trustline. */
-export async function hasUsdcTrustline(account: string): Promise<boolean> {
+/** Parse a Horizon decimal string such as "20.0000000" into stroops, without floats. */
+export function parseStroops(decimal: string): bigint {
+  const [whole = "0", frac = ""] = decimal.split(".");
+  return BigInt(whole) * STROOPS + BigInt(frac.padEnd(7, "0").slice(0, 7));
+}
+
+export type Readiness = { funded: boolean; trustline: boolean; usdc: bigint };
+
+/** What a wallet still needs before it can pay: an account, a USDC trustline, USDC. */
+export async function getReadiness(account: string): Promise<Readiness> {
   const res = await fetch(`${HORIZON_URL}/accounts/${account}`);
-  if (!res.ok) return false;
+  if (res.status === 404) return { funded: false, trustline: false, usdc: 0n };
+  if (!res.ok) throw new Error(`Horizon answered ${res.status}`);
   const body = (await res.json()) as {
-    balances: { asset_code?: string; asset_issuer?: string }[];
+    balances: { asset_code?: string; asset_issuer?: string; balance: string }[];
   };
-  return body.balances.some(
+  const line = body.balances.find(
     (b) => b.asset_code === "USDC" && b.asset_issuer === USDC_ISSUER,
   );
+  return {
+    funded: true,
+    trustline: !!line,
+    usdc: line ? parseStroops(line.balance) : 0n,
+  };
+}
+
+/** True when the account holds a USDC trustline. */
+export async function hasUsdcTrustline(account: string): Promise<boolean> {
+  try {
+    return (await getReadiness(account)).trustline;
+  } catch {
+    return false;
+  }
+}
+
+/** Ask Friendbot for free testnet XLM, which also creates the account. */
+export async function fundWithFriendbot(account: string): Promise<void> {
+  const res = await fetch(`${FRIENDBOT_URL}/?addr=${encodeURIComponent(account)}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    if (/already funded|createAccountAlreadyExist/i.test(text)) return;
+    throw new Error("Friendbot could not fund this account. Try again in a moment.");
+  }
 }
 
 export type Signer = (xdr: string) => Promise<string>;
@@ -305,4 +339,21 @@ export async function close(
     return { hash: null, ok: false, error: contractErrorName(sim.error) ?? sim.error };
   }
   return submit(await server.prepareTransaction(tx), sign, onPhase);
+}
+
+/** Add a USDC trustline to the connected wallet. The wallet signs it. */
+export async function addUsdcTrustline(
+  account: string,
+  sign: Signer,
+  onPhase: (p: Phase) => void,
+): Promise<TxOutcome> {
+  const source = await server.getAccount(account);
+  const tx = new TransactionBuilder(source, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(Operation.changeTrust({ asset: new Asset("USDC", USDC_ISSUER) }))
+    .setTimeout(120)
+    .build();
+  return submit(tx, sign, onPhase);
 }
