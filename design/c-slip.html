@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Due, direction C: slip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #0e4a37;
+    --green-2: #135c45;
+    --ink: #11201a;
+    --muted: #5d6b64;
+    --paper: #f6f7f3;
+    --line: #dfe3da;
+    --sun: #ffd23f;
+    --brick: #b4382a;
+    --display: "Bricolage Grotesque", "Arial Narrow", sans-serif;
+    --body: "Hanken Grotesk", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { background: var(--paper); }
+  body { min-height: 100dvh; color: var(--ink); font: 400 17px/1.45 var(--body); -webkit-font-smoothing: antialiased; }
+  body[data-state="open"] [data-show]:not([data-show~="open"]),
+  body[data-state="paid"] [data-show]:not([data-show~="paid"]),
+  body[data-state="expired"] [data-show]:not([data-show~="expired"]),
+  body[data-state="closed"] [data-show]:not([data-show~="closed"]),
+  body[data-wallet="off"] [data-wallet-show="on"],
+  body[data-wallet="on"] [data-wallet-show="off"],
+  body[data-attempts="0"] #attempts-wrap { display: none !important; }
+
+  .page { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 100dvh; }
+  @media (min-width: 940px) { .page { grid-template-columns: minmax(0, 1.05fr) minmax(420px, .95fr); } }
+
+  /* hero */
+  .hero { position: relative; overflow: hidden; background: var(--green); color: #f3f7ef; padding: 22px 24px 40px; display: flex; flex-direction: column; border-radius: 0 0 30px 30px; }
+  @media (min-width: 940px) { .hero { padding: 36px 48px 44px; border-radius: 0 34px 34px 0; min-height: 100dvh; } }
+  .hero::after { content: ""; position: absolute; right: -90px; bottom: -90px; width: 360px; height: 360px; border-radius: 50%; border: 56px solid rgba(255,255,255,.05); pointer-events: none; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; font: 700 28px/1 var(--display); letter-spacing: -.02em; }
+  .brand svg { width: 32px; height: 32px; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .pill { padding: 9px 16px; border-radius: 999px; border: 1.5px solid rgba(243,247,239,.5); background: transparent; font: 600 14px/1 var(--body); }
+  .pill:hover { background: rgba(255,255,255,.1); }
+  .who { display: flex; align-items: center; gap: 10px; font-size: 14px; opacity: .9; }
+  .who code { font: 600 13px/1 var(--body); letter-spacing: .02em; }
+
+  .heroBody { margin: auto 0; padding: 36px 0 12px; }
+  .lede { font: 500 clamp(19px, 2.4vw, 24px)/1.25 var(--display); max-width: 20ch; opacity: .92; }
+  .figure { margin-top: 26px; font: 800 clamp(150px, 31vw, 330px)/.78 var(--display); letter-spacing: -.06em; font-variation-settings: "opsz" 96; display: flex; align-items: flex-end; gap: 14px; }
+  .figure small { font: 700 clamp(26px, 4vw, 44px)/1 var(--display); letter-spacing: -.02em; padding-bottom: .16em; opacity: .85; }
+  .status { margin-top: 28px; display: inline-flex; align-items: center; gap: 10px; padding: 9px 16px 9px 12px; border-radius: 999px; background: rgba(255,255,255,.12); font: 600 16px/1 var(--body); }
+  .status i { width: 11px; height: 11px; border-radius: 50%; background: var(--sun); box-shadow: 0 0 0 4px rgba(255,210,63,.22); }
+  body[data-state="paid"] .status i { background: #8de0b1; box-shadow: 0 0 0 4px rgba(141,224,177,.22); }
+  body[data-state="expired"] .status i, body[data-state="closed"] .status i { background: #c9c9c0; box-shadow: none; }
+
+  /* sheet */
+  .sheet { padding: 30px 24px 96px; max-width: 640px; width: 100%; margin: 0 auto; align-self: center; }
+  @media (min-width: 940px) { .sheet { padding: 48px 48px 96px; } }
+  .sheet h1 { font: 700 30px/1.1 var(--display); letter-spacing: -.02em; }
+  .sheet h1 span { color: var(--muted); font-weight: 500; }
+  .rows { margin-top: 18px; border-top: 1px solid var(--line); }
+  .row { display: flex; justify-content: space-between; gap: 18px; padding: 15px 0; border-bottom: 1px solid var(--line); }
+  .row dt { color: var(--muted); }
+  .row dd { text-align: right; font-weight: 600; }
+  .row dd small { display: block; font-weight: 400; color: var(--muted); font-size: 14px; }
+  a { color: inherit; text-decoration-color: rgba(17,32,26,.35); text-underline-offset: 4px; }
+
+  .checks { margin-top: 26px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .check { padding: 14px 12px 12px; border: 1.5px solid var(--line); border-radius: 16px; background: #fff; display: grid; gap: 8px; justify-items: start; font-weight: 600; font-size: 15px; line-height: 1.2; }
+  .check b { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; transition: background .35s, border-color .35s; }
+  .check b::after { content: ""; width: 6px; height: 11px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: rotate(40deg) translate(-1px, -1px); opacity: 0; transition: opacity .2s .15s; }
+  .check small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; margin-top: 2px; }
+  body[data-state="paid"] .check { border-color: var(--green); }
+  body[data-state="paid"] .check b { background: var(--green); border-color: var(--green); }
+  body[data-state="paid"] .check b::after { opacity: 1; }
+
+  .cta { margin-top: 26px; display: grid; gap: 10px; }
+  .btn { width: 100%; padding: 17px 20px; border-radius: 16px; border: 2px solid var(--ink); background: transparent; font: 700 18px/1 var(--display); letter-spacing: -.01em; }
+  .btn:hover:not(:disabled) { background: rgba(17,32,26,.06); }
+  .btn.solid { background: var(--sun); border-color: var(--sun); color: #2a2200; box-shadow: 0 3px 0 #c9a300; }
+  .btn.solid:hover:not(:disabled) { background: #ffdb62; }
+  .btn.solid:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #c9a300; }
+  .btn.quiet { border-color: var(--line); font-weight: 600; font-size: 16px; }
+  .note { margin-top: 12px; color: var(--muted); font-size: 15.5px; }
+
+  #attempts-wrap { margin-top: 32px; }
+  #attempts-wrap h2 { font: 700 18px/1 var(--display); margin-bottom: 4px; }
+  .attempt { display: grid; grid-template-columns: 1fr auto; gap: 3px 14px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: center; }
+  .attempt .l { font-weight: 700; }
+  .attempt .b { font: 700 13px/1 var(--body); padding: 6px 11px; border-radius: 999px; }
+  .attempt[data-ok="yes"] .b { background: #d9efe2; color: var(--green); }
+  .attempt[data-ok="no"] .b { background: #f6dcd7; color: var(--brick); }
+  .attempt .h { font-size: 14px; color: var(--muted); }
+  .attempt .c { justify-self: end; background: none; border: 0; padding: 0; font-size: 14px; color: var(--muted); text-decoration: underline; }
+
+  .fine { margin-top: 36px; font-size: 14.5px; color: var(--muted); display: grid; gap: 8px; }
+  .fine strong { color: var(--ink); font-weight: 600; }
+  .fine code { font: 500 12px/1.4 ui-monospace, monospace; overflow-wrap: anywhere; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .figure { animation: rise .5s cubic-bezier(.2, .8, .2, 1) both; }
+    @keyframes rise { from { transform: translateY(14px); opacity: 0; } }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <section class="hero" aria-label="Amount due">
+    <div class="bar">
+      <div class="brand">
+        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#ffd23f"/><path d="M17 12.5h16.5a19.5 19.5 0 0 1 0 39H17z" stroke="#0e4a37" stroke-width="7" stroke-linejoin="round"/><path d="M28 32.5l5.5 5.5 9.5-11.5" stroke="#0e4a37" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Due
+      </div>
+      <div class="who">
+        <span data-wallet-show="on">Connected <code data-wallet-addr></code></span>
+        <button class="pill" data-act="connect" data-wallet-show="off">Connect Freighter</button>
+        <button class="pill" data-act="disconnect" data-wallet-show="on">Disconnect</button>
+      </div>
+    </div>
+    <div class="heroBody">
+      <p class="lede">A Stellar invoice that only settles an exact, on-time payment.</p>
+      <div class="figure"><span data-f="amount"></span><small>USDC</small></div>
+      <div class="status"><i></i>
+        <span data-show="open">Open, <span data-f="left"></span></span>
+        <span data-show="paid">Paid</span>
+        <span data-show="expired">Past the deadline</span>
+        <span data-show="closed">Closed unpaid</span>
+      </div>
+    </div>
+  </section>
+
+  <main class="sheet">
+    <h1>Invoice <span data-f="ref"></span></h1>
+    <dl class="rows">
+      <div class="row"><dt>Pay to</dt><dd><a href="#" onclick="return false" data-f="recipient"></a></dd></div>
+      <div class="row"><dt>Pay by</dt><dd><span data-f="deadline"></span></dd></div>
+      <div class="row" data-show="paid"><dt>Paid by</dt><dd><a href="#" onclick="return false" data-f="payer"></a></dd></div>
+      <div class="row"><dt>Due number</dt><dd data-f="id"></dd></div>
+    </dl>
+
+    <div class="checks" aria-label="What the contract checks">
+      <div class="check"><b></b><span>Right asset<small>USDC</small></span></div>
+      <div class="check"><b></b><span>Right amount<small>exactly <span data-f="amount"></span></small></span></div>
+      <div class="check"><b></b><span>On time<small>before the deadline</small></span></div>
+    </div>
+
+    <div class="cta" data-show="open">
+      <button class="btn solid needs-wallet" data-act="pay" disabled><span class="js-pay-label">Pay 10 USDC</span></button>
+      <button class="btn quiet needs-wallet" data-act="wrong" disabled>Try paying 9 USDC</button>
+    </div>
+    <p class="note" data-show="open"><span data-wallet-show="off">Connect a testnet wallet to pay.</span><span data-wallet-show="on">The money goes straight from you to the recipient in one transaction. The contract keeps nothing.</span></p>
+
+    <div class="cta" data-show="expired">
+      <button class="btn solid needs-wallet" data-act="close" disabled>Close due</button>
+      <button class="btn quiet js-next" data-act="next"><span class="js-next-label">Show next open due</span></button>
+    </div>
+    <p class="note" data-show="expired">Nobody paid before the deadline, so anyone can close this due. Nothing was locked, so nothing is refunded.</p>
+
+    <div class="cta" data-show="paid closed"><button class="btn js-next" data-act="next"><span class="js-next-label">Show next open due</span></button></div>
+    <p class="note" data-show="paid">Paid in one transaction, <a href="#" onclick="return false" data-f="tx"></a>. The contract kept nothing.</p>
+    <p class="note" data-show="closed">Closed unpaid after the deadline. The record stays on-chain.</p>
+
+    <section id="attempts-wrap" aria-label="Your attempts">
+      <h2>Your attempts</h2>
+      <div id="attempts"></div>
+    </section>
+    <template id="tpl-attempt">
+      <div class="attempt">
+        <span class="l" data-slot="label"></span>
+        <span class="b" data-slot="badge"></span>
+        <span class="h"><a href="#" onclick="return false" data-slot="tx"></a></span>
+        <button class="c" data-act="copy">Copy hash</button>
+      </div>
+    </template>
+
+    <footer class="fine">
+      <p><strong>Testnet USDC. Not a legal invoice.</strong> A wrong recipient address still gets paid. Due checks the amount, the asset and the time, not who you meant to pay.</p>
+      <p>Contract <code>CA37U34JBHVRCIAIHWMZKV4BGMOWLA5Z6EJGGBS6MHOTU7L7WXH2YIHF</code>. Not audited. No admin key.</p>
+    </footer>
+  </main>
+</div>
+<script src="shared.js"></script>
+</body>
+</html>

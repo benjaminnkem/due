@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Due, direction B: drawing sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;600&family=Barlow+Semi+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #163e8f;
+    --chalk: #e8efff;
+    --dim: rgba(232, 239, 255, .55);
+    --faint: rgba(232, 239, 255, .16);
+    --flag: #ff8f45;
+    --label: "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+    --mono: "Azeret Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { background: var(--bg); }
+  body {
+    min-height: 100dvh; padding: 18px 18px 84px; color: var(--chalk); font: 400 16px/1.4 var(--label); -webkit-font-smoothing: antialiased;
+    background:
+      linear-gradient(var(--faint) 1px, transparent 1px) 0 0 / 120px 120px,
+      linear-gradient(90deg, var(--faint) 1px, transparent 1px) 0 0 / 120px 120px,
+      linear-gradient(rgba(232,239,255,.06) 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(90deg, rgba(232,239,255,.06) 1px, transparent 1px) 0 0 / 24px 24px,
+      var(--bg);
+  }
+  body[data-state="open"] [data-show]:not([data-show~="open"]),
+  body[data-state="paid"] [data-show]:not([data-show~="paid"]),
+  body[data-state="expired"] [data-show]:not([data-show~="expired"]),
+  body[data-state="closed"] [data-show]:not([data-show~="closed"]),
+  body[data-wallet="off"] [data-wallet-show="on"],
+  body[data-wallet="on"] [data-wallet-show="off"],
+  body[data-attempts="0"] #attempts-wrap { display: none !important; }
+
+  .frame { position: relative; max-width: 1080px; margin: 0 auto; border: 2px solid var(--chalk); padding: 26px 28px 28px; background: rgba(22, 62, 143, .86); }
+  .frame::before { content: ""; position: absolute; inset: 5px; border: 1px solid var(--dim); pointer-events: none; }
+
+  .top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 14px 24px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand svg { width: 44px; height: 44px; }
+  .brand h1 { font: 600 44px/1 var(--label); letter-spacing: .01em; }
+  .brand p { font-size: 17px; color: var(--dim); margin-top: 2px; }
+  .wallet { display: flex; align-items: center; gap: 12px; font-size: 15px; color: var(--dim); }
+  .wallet code { font: 500 13px/1 var(--mono); color: var(--chalk); }
+
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible { outline: 2px solid var(--flag); outline-offset: 3px; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  .btn { padding: 11px 18px; background: transparent; border: 1.5px solid var(--chalk); border-radius: 0; font: 500 14px/1 var(--mono); }
+  .btn:hover:not(:disabled) { background: rgba(232,239,255,.12); }
+  .btn.solid { background: var(--chalk); color: var(--bg); font-weight: 600; }
+  .btn.solid:hover:not(:disabled) { background: #fff; }
+  .btn.small { padding: 8px 12px; font-size: 13px; }
+
+  .grid { margin-top: 30px; display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 34px; align-items: start; }
+
+  /* the dimensioned part */
+  .dim { position: relative; height: 34px; }
+  .dim::before { content: ""; position: absolute; left: 0; right: 0; top: 20px; height: 1.5px; background: var(--chalk); }
+  .dim i { position: absolute; top: 12px; border: 4.5px solid transparent; }
+  .dim i:nth-of-type(1) { left: 0; border-right: 13px solid var(--chalk); border-left: 0; }
+  .dim i:nth-of-type(2) { right: 0; border-left: 13px solid var(--chalk); border-right: 0; }
+  .dim b { position: absolute; top: 0; bottom: 0; width: 1.5px; background: var(--chalk); }
+  .dim b:nth-of-type(1) { left: 0; } .dim b:nth-of-type(2) { right: 0; }
+  .dim span { position: absolute; left: 50%; top: 4px; transform: translateX(-50%); padding: 0 12px; background: #173f90; font: 500 14px/1 var(--mono); white-space: nowrap; }
+
+  .part { position: relative; border: 2px solid var(--chalk); padding: 28px 24px 24px; }
+  .part .big { font: 500 clamp(56px, 9vw, 104px)/1 var(--mono); letter-spacing: -.05em; }
+  .part .big em { font-style: normal; font-size: .36em; letter-spacing: -.02em; color: var(--dim); margin-left: 6px; }
+  .part .big small { font-size: .26em; letter-spacing: 0; margin-left: 10px; color: var(--chalk); }
+  .part .cap { margin-top: 10px; font-size: 17px; color: var(--dim); }
+  /* a paid part is drawn in section: hatched */
+  body[data-state="paid"] .part { background: repeating-linear-gradient(135deg, rgba(232,239,255,.13) 0 2px, transparent 2px 11px); }
+  body[data-state="expired"] .part, body[data-state="closed"] .part { border-style: dashed; }
+  .void { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top right, transparent calc(50% - 1px), var(--dim) 50%, transparent calc(50% + 1px)); }
+
+  .tol { width: 100%; margin-top: 24px; border-collapse: collapse; font-size: 16px; }
+  .tol th { text-align: left; font-weight: 500; color: var(--dim); padding: 0 12px 8px 0; border-bottom: 1.5px solid var(--chalk); }
+  .tol td { padding: 11px 12px 11px 0; border-bottom: 1px solid var(--faint); vertical-align: baseline; }
+  .tol td:first-child { width: 28px; }
+  .tol .v { font: 500 14px/1.3 var(--mono); }
+  .mark { display: inline-block; width: 15px; height: 15px; border: 1.5px solid var(--chalk); border-radius: 50%; vertical-align: -2px; position: relative; }
+  body[data-state="paid"] .mark::after { content: ""; position: absolute; left: 3.5px; top: 0.5px; width: 4px; height: 8px; border: solid var(--chalk); border-width: 0 2px 2px 0; transform: rotate(40deg); }
+
+  .actions { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .note { margin-top: 14px; color: var(--dim); font-size: 17px; max-width: 52ch; }
+
+  #attempts-wrap { margin-top: 30px; }
+  #attempts-wrap h2 { font: 600 17px/1 var(--label); padding-bottom: 8px; border-bottom: 1.5px solid var(--chalk); }
+  #attempts { counter-reset: rev; }
+  .attempt { counter-increment: rev; display: grid; grid-template-columns: 26px 1fr auto; gap: 2px 12px; align-items: baseline; padding: 12px 10px 10px 0; border-bottom: 1px solid var(--faint); }
+  .attempt::before { content: counter(rev, upper-alpha); font: 500 13px/1 var(--mono); color: var(--dim); }
+  .attempt .l { font: 500 14px/1.2 var(--mono); }
+  .attempt .b { font: 500 13px/1 var(--mono); padding: 4px 8px; border: 1.5px solid; }
+  .attempt[data-ok="no"] { position: relative; }
+  .attempt[data-ok="no"] .b { color: var(--flag); border-style: dashed; border-radius: 40% 30% 45% 35% / 55% 40% 60% 45%; }
+  .attempt[data-ok="no"] .l::after { content: " out of tolerance"; color: var(--flag); font-family: var(--label); font-size: 15px; }
+  .attempt .h { grid-column: 2; font: 400 12.5px/1.2 var(--mono); color: var(--dim); }
+  .attempt .c { grid-column: 3; justify-self: end; background: none; border: 0; padding: 0; font: 400 12.5px/1 var(--mono); color: var(--dim); text-decoration: underline; }
+  a { color: inherit; text-underline-offset: 3px; }
+
+  /* title block, drawing-sheet style */
+  .tb { border: 2px solid var(--chalk); display: grid; grid-template-columns: 1fr 1fr; align-self: end; }
+  .tb div { padding: 8px 10px 10px; border-bottom: 1px solid var(--dim); min-height: 56px; }
+  .tb div.l { border-right: 1px solid var(--dim); }
+  .tb .wide { grid-column: 1 / -1; border-right: 0; }
+  .tb div:nth-last-child(-n+2) { border-bottom: 0; }
+  .tb dt { font-size: 13px; color: var(--dim); }
+  .tb dd { margin-top: 4px; font: 500 13.5px/1.3 var(--mono); overflow-wrap: anywhere; }
+  .tb .title dd { font: 600 26px/1.1 var(--label); }
+
+  .notes { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--dim); font-size: 15.5px; color: var(--dim); display: grid; gap: 4px; max-width: 78ch; }
+  .notes h2 { font: 600 15px/1 var(--label); color: var(--chalk); margin-bottom: 6px; }
+  .notes ol { padding-left: 22px; display: grid; gap: 4px; }
+  .notes code { font: 400 12px/1.3 var(--mono); color: var(--chalk); overflow-wrap: anywhere; }
+
+  @media (max-width: 820px) {
+    body { padding: 8px 8px 80px; } .frame { padding: 20px 16px 22px; }
+    .grid { grid-template-columns: 1fr; gap: 26px; } .brand h1 { font-size: 38px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .part { transition: background .4s; }
+  }
+</style>
+</head>
+<body>
+<main class="frame">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="2" y="2" width="60" height="60" stroke="#e8efff" stroke-width="3"/><path d="M19 14h14a18 18 0 0 1 0 36H19z" stroke="#e8efff" stroke-width="5" stroke-linejoin="round"/><path d="M28 32.5l5 5 9-11" stroke="#e8efff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><h1>Due</h1><p>A Stellar invoice that only settles an exact, on-time payment.</p></div>
+    </div>
+    <div class="wallet">
+      <span data-wallet-show="off">Wallet not connected. You can read the due without one.</span>
+      <span data-wallet-show="on">Connected <code data-wallet-addr></code></span>
+      <button class="btn small" data-act="connect" data-wallet-show="off">Connect Freighter</button>
+      <button class="btn small" data-act="disconnect" data-wallet-show="on">Disconnect</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section aria-label="Due">
+      <div class="dim" aria-hidden="true"><b></b><b></b><i></i><i></i><span>10.0000000 USDC, exact</span></div>
+      <div class="part">
+        <div class="big"><span data-f="amount"></span><em>.0000000</em><small>USDC</small></div>
+        <p class="cap" data-show="open">Open until <span data-f="deadline"></span>, <span data-f="left"></span></p>
+        <p class="cap" data-show="paid">Paid in full by <a href="#" onclick="return false" data-f="payer"></a></p>
+        <p class="cap" data-show="expired">The deadline passed. Nobody paid.</p>
+        <p class="cap" data-show="closed">Closed unpaid after the deadline.</p>
+        <div class="void" data-show="expired closed"></div>
+      </div>
+
+      <table class="tol" aria-label="What the contract checks">
+        <thead><tr><th></th><th>Checked</th><th>Required</th><th>Tolerance</th></tr></thead>
+        <tbody>
+          <tr><td><span class="mark"></span></td><td>Asset</td><td class="v">USDC, Circle testnet</td><td class="v">none</td></tr>
+          <tr><td><span class="mark"></span></td><td>Amount</td><td class="v"><span data-f="amount"></span>.0000000</td><td class="v">±0</td></tr>
+          <tr><td><span class="mark"></span></td><td>Time</td><td class="v">by <span data-f="deadline"></span></td><td class="v">none</td></tr>
+        </tbody>
+      </table>
+
+      <div class="actions" data-show="open">
+        <button class="btn solid needs-wallet" data-act="pay" disabled><span class="js-pay-label">Pay 10 USDC</span></button>
+        <button class="btn needs-wallet" data-act="wrong" disabled>Try paying 9 USDC</button>
+      </div>
+      <p class="note" data-show="open"><span data-wallet-show="off">Connect a testnet wallet to pay.</span><span data-wallet-show="on">Payment goes straight from you to the recipient in one transaction.</span></p>
+      <div class="actions" data-show="expired">
+        <button class="btn solid needs-wallet" data-act="close" disabled>Close due</button>
+        <button class="btn js-next" data-act="next"><span class="js-next-label">Show next open due</span></button>
+      </div>
+      <p class="note" data-show="expired">Anyone can close it. Nothing was locked, so nothing is refunded.</p>
+      <div class="actions" data-show="paid closed"><button class="btn js-next" data-act="next"><span class="js-next-label">Show next open due</span></button></div>
+      <p class="note" data-show="paid">USDC moved payer to recipient in one transaction, <a href="#" onclick="return false" data-f="tx"></a>. The contract kept nothing.</p>
+
+      <section id="attempts-wrap" aria-label="Your attempts">
+        <h2>Revisions this session</h2>
+        <div id="attempts"></div>
+      </section>
+      <template id="tpl-attempt">
+        <div class="attempt">
+          <span class="l" data-slot="label"></span>
+          <span class="b" data-slot="badge"></span>
+          <span class="h"><a href="#" onclick="return false" data-slot="tx"></a></span>
+          <button class="c" data-act="copy">Copy hash</button>
+        </div>
+      </template>
+    </section>
+
+    <dl class="tb" aria-label="Title block">
+      <div class="wide title"><dt>Title</dt><dd>Invoice, <span data-f="ref"></span></dd></div>
+      <div class="l"><dt>Due no.</dt><dd data-f="serial"></dd></div>
+      <div><dt>Status</dt><dd><span data-show="open">Open</span><span data-show="paid">Paid</span><span data-show="expired">Expired</span><span data-show="closed">Closed</span></dd></div>
+      <div class="wide"><dt>Recipient</dt><dd><a href="#" onclick="return false" data-f="recipient"></a></dd></div>
+      <div class="l"><dt>Network</dt><dd>Stellar testnet</dd></div>
+      <div><dt>Sheet</dt><dd>1 of 1</dd></div>
+    </dl>
+  </div>
+
+  <footer class="notes">
+    <h2>General notes</h2>
+    <ol>
+      <li>Testnet USDC. Not a legal invoice. Not audited.</li>
+      <li>A wrong recipient address still gets paid. Due checks the amount, the asset and the time, not who you meant to pay.</li>
+      <li>Contract <code>CA37U34JBHVRCIAIHWMZKV4BGMOWLA5Z6EJGGBS6MHOTU7L7WXH2YIHF</code>. No admin key, no way to move funds after deploy.</li>
+    </ol>
+  </footer>
+</main>
+<script src="shared.js"></script>
+</body>
+</html>

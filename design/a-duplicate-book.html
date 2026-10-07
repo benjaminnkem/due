@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Due, direction A: duplicate book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --desk: #dedbd0;
+    --paper: #f1e5a0;
+    --paper-deep: #e9db86;
+    --print: #24338f;      /* form print, carbon blue */
+    --typed: #1a1d33;      /* typewriter ink */
+    --red: #c1272d;        /* serial number and stamps */
+    --rule: rgba(36, 51, 143, .55);
+    --label: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --type: "Courier Prime", "Courier New", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { background: var(--desk); }
+  body { min-height: 100dvh; padding: 40px 16px 88px; color: var(--typed); font-family: var(--type); -webkit-font-smoothing: antialiased; }
+
+  /* state helpers */
+  body[data-state="open"] [data-show]:not([data-show~="open"]),
+  body[data-state="paid"] [data-show]:not([data-show~="paid"]),
+  body[data-state="expired"] [data-show]:not([data-show~="expired"]),
+  body[data-state="closed"] [data-show]:not([data-show~="closed"]),
+  body[data-wallet="off"] [data-wallet-show="on"],
+  body[data-wallet="on"] [data-wallet-show="off"],
+  body[data-attempts="0"] #attempts-wrap { display: none !important; }
+
+  .sheet {
+    position: relative; max-width: 720px; margin: 0 auto; padding: 44px 36px 28px;
+    background:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35  0 0 0 0 .3  0 0 0 0 .1  0 0 0 .09 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"),
+      linear-gradient(180deg, var(--paper) 0%, var(--paper-deep) 100%);
+    box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 12px 28px -14px rgba(60, 50, 10, .45);
+  }
+  /* perforation along the top edge, where this copy tears from the pad */
+  .sheet::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 12px;
+    background: radial-gradient(circle at 11px 0, var(--desk) 6px, transparent 6.5px) 0 0 / 22px 12px repeat-x;
+  }
+
+  .head { display: grid; grid-template-columns: 1fr auto; gap: 8px 24px; align-items: start; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand svg { width: 46px; height: 46px; flex: none; }
+  .brand h1 { font: 700 54px/0.9 var(--label); letter-spacing: -.01em; color: var(--print); }
+  .serial { text-align: right; font-family: var(--label); color: var(--print); font-size: 19px; line-height: 1.05; }
+  .serial b { display: block; margin-top: 4px; font: 700 26px/1 var(--type); letter-spacing: .02em; color: var(--red); }
+  .tag { grid-column: 1 / -1; font: 500 19px/1.25 var(--label); color: var(--print); max-width: 34ch; }
+
+  .wallet { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; font-size: 14px; }
+  .wallet small { font: 500 16px/1.2 var(--label); color: var(--print); }
+  .wallet code { font-family: var(--type); font-weight: 700; }
+
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+  button:disabled { opacity: .42; cursor: not-allowed; }
+  .btn { padding: 11px 18px; background: transparent; color: var(--print); border: 2px solid var(--print); border-radius: 2px; font: 700 15px/1 var(--type); }
+  .btn:hover:not(:disabled) { background: rgba(36,51,143,.09); }
+  .btn.solid { background: var(--print); color: var(--paper); }
+  .btn.solid:hover:not(:disabled) { background: #1b2873; }
+  .btn.small { padding: 8px 12px; font-size: 13px; }
+
+  /* the printed form */
+  .formwrap { position: relative; margin-top: 22px; }
+  .form { margin: 0; display: grid; grid-template-columns: 1fr 1fr; border: 2px solid var(--print); position: relative; }
+  .cell { padding: 10px 14px 12px; border-bottom: 1.5px solid var(--rule); min-height: 74px; }
+  .cell.l { border-right: 1.5px solid var(--rule); }
+  .cell.full { grid-column: 1 / -1; border-right: 0; }
+  .cell:last-child { border-bottom: 0; }
+  .cell dt { font: 500 15px/1 var(--label); color: var(--print); letter-spacing: .02em; }
+  .cell dd { margin-top: 8px; font: 700 18px/1.25 var(--type); overflow-wrap: anywhere; }
+  .cell dd small { display: block; margin-top: 3px; font: 400 14px/1.2 var(--type); opacity: .75; }
+  a { color: inherit; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+
+  .amount { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px; padding: 14px 14px 16px; border-bottom: 1.5px solid var(--rule); }
+  .amount dt { font: 500 15px/1 var(--label); color: var(--print); letter-spacing: .02em; }
+  .amount .box { position: relative; padding: 10px 22px 8px; border: 2px solid var(--print); font: 700 52px/1 var(--type); letter-spacing: -.02em; }
+  .amount .box span { font-size: 22px; letter-spacing: 0; margin-left: 8px; }
+
+  /* rubber stamp, with ink that isn't perfectly even */
+  .stamp {
+    position: absolute; right: 250px; bottom: 14px; z-index: 2; pointer-events: none;
+    padding: 4px 18px 2px; border: 4px solid currentColor; border-radius: 6px; outline: 1.5px solid currentColor; outline-offset: 3px;
+    font: 700 58px/1 var(--label); letter-spacing: .06em; text-transform: uppercase; color: #b3263e;
+    transform: rotate(-9deg); mix-blend-mode: multiply; opacity: .88; filter: url(#rough);
+  }
+    .stamp.blue { color: #2c4590; }
+
+  .actions { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .note { margin-top: 14px; font: 500 17px/1.3 var(--label); color: var(--print); }
+
+  #attempts-wrap { margin-top: 26px; }
+  #attempts-wrap h2 { font: 600 20px/1 var(--label); color: var(--print); padding-bottom: 6px; border-bottom: 2px solid var(--print); }
+  .attempt { display: grid; grid-template-columns: 1fr auto; gap: 2px 14px; align-items: baseline; padding: 11px 0 9px; border-bottom: 1.5px solid var(--rule); }
+  .attempt .l { font-weight: 700; }
+  .attempt .h { grid-column: 1; font-size: 13px; opacity: .8; }
+  .attempt .b { grid-row: 1; grid-column: 2; font: 700 17px/1 var(--label); letter-spacing: .05em; padding: 3px 9px 1px; border: 2px solid; transform: rotate(-2deg); }
+  .attempt[data-ok="no"] .b { color: var(--red); }
+  .attempt[data-ok="yes"] .b { color: var(--print); }
+  .attempt .c { grid-row: 2; grid-column: 2; justify-self: end; background: none; border: 0; font: 400 13px/1 var(--type); text-decoration: underline; padding: 2px 0; }
+
+  .fine { margin-top: 26px; padding-top: 14px; border-top: 1.5px dashed var(--rule); font: 400 17px/1.3 var(--label); color: var(--print); }
+  .fine p + p { margin-top: 6px; }
+  .fine code { font: 400 12px/1.3 var(--type); color: var(--typed); overflow-wrap: anywhere; }
+
+  @media (max-width: 560px) {
+    body { padding: 12px 8px 80px; } .sheet { padding: 38px 18px 22px; }
+    .brand h1 { font-size: 46px; } .form { grid-template-columns: 1fr; }
+    .cell.l { border-right: 0; }
+    .amount { grid-template-columns: 1fr; } .amount .box { font-size: 42px; justify-self: start; }
+    .stamp { right: 12px; bottom: 74px; font-size: 44px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .stamp { animation: thud .28s cubic-bezier(.2, 1.4, .4, 1) both; }
+    @keyframes thud { from { transform: rotate(-9deg) scale(1.5); opacity: 0; } }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="rough" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4"/>
+    <feComponentTransfer><feFuncA type="discrete" tableValues="0 1 1 1 1 1 1 1"/></feComponentTransfer>
+  </filter>
+</svg>
+
+<main class="sheet">
+  <header class="head">
+    <div class="brand">
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect width="64" height="64" rx="10" fill="#24338f"/><path d="M17 12.5h16.5a19.5 19.5 0 0 1 0 39H17z" stroke="#f1e5a0" stroke-width="7" stroke-linejoin="round"/><path d="M28 32.5l5.5 5.5 9.5-11.5" stroke="#f1e5a0" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h1>Due</h1>
+    </div>
+    <div class="serial">Invoice<b>№ <span data-f="serial"></span></b></div>
+    <p class="tag">A Stellar invoice that only settles an exact, on-time payment.</p>
+  </header>
+
+  <div class="wallet">
+    <small data-wallet-show="off">Wallet not connected. You can read the due without one.</small>
+    <small data-wallet-show="on">Connected as <code data-wallet-addr></code></small>
+    <button class="btn small" data-act="connect" data-wallet-show="off">Connect Freighter</button>
+    <button class="btn small" data-act="disconnect" data-wallet-show="on">Disconnect</button>
+  </div>
+
+  <div class="formwrap">
+  <dl class="form">
+    <div class="cell l"><dt>Pay to</dt><dd><a href="#" onclick="return false" data-f="recipient"></a></dd></div>
+    <div class="cell"><dt>Reference</dt><dd data-f="ref"></dd></div>
+    <div class="cell l"><dt>Pay by</dt><dd><span data-f="deadline"></span><small data-f="left"></small></dd></div>
+    <div class="cell" data-show="paid"><dt>Paid by</dt><dd><a href="#" onclick="return false" data-f="payer"></a></dd></div>
+    <div class="cell" data-show="open expired closed"><dt>Status</dt><dd><span data-show="open">Open</span><span data-show="expired">Past the deadline</span><span data-show="closed">Closed unpaid</span></dd></div>
+    <div class="amount">
+      <dt>Amount due</dt>
+      <div class="box"><span style="margin:0;font-size:inherit;letter-spacing:inherit" data-f="amount"></span><span>USDC</span></div>
+    </div>
+  </dl>
+  <div class="stamp" data-show="paid" role="img" aria-label="Paid">Paid</div>
+  <div class="stamp blue" data-show="expired" role="img" aria-label="Expired">Expired</div>
+  <div class="stamp blue" data-show="closed" role="img" aria-label="Closed">Closed</div>
+  </div>
+
+  <div class="actions" data-show="open">
+    <button class="btn solid needs-wallet" data-act="pay" disabled><span class="js-pay-label">Pay 10 USDC</span></button>
+    <button class="btn needs-wallet" data-act="wrong" disabled>Try paying 9 USDC</button>
+  </div>
+  <p class="note" data-show="open"><span data-wallet-show="off">Connect a testnet wallet to pay.</span><span data-wallet-show="on">The contract moves USDC straight from you to the recipient in one transaction.</span></p>
+
+  <div class="actions" data-show="expired">
+    <button class="btn solid needs-wallet" data-act="close" disabled><span>Close due</span></button>
+    <button class="btn js-next" data-act="next"><span class="js-next-label">Show next open due</span></button>
+  </div>
+  <p class="note" data-show="expired">The deadline passed and nobody paid. Anyone can close it. Nothing was locked, so nothing is refunded.</p>
+
+  <div class="actions" data-show="paid closed">
+    <button class="btn js-next" data-act="next"><span class="js-next-label">Show next open due</span></button>
+  </div>
+  <p class="note" data-show="paid">Paid. USDC went from the payer to the recipient in one transaction, <a href="#" onclick="return false" data-f="tx"></a>. The contract kept nothing.</p>
+  <p class="note" data-show="closed">Closed unpaid after the deadline. The record stays on-chain.</p>
+
+  <section id="attempts-wrap" aria-label="Your attempts">
+    <h2>Notes on the back</h2>
+    <div id="attempts"></div>
+  </section>
+  <template id="tpl-attempt">
+    <div class="attempt">
+      <span class="l" data-slot="label"></span>
+      <span class="b" data-slot="badge"></span>
+      <span class="h"><a href="#" onclick="return false" data-slot="tx"></a></span>
+      <button class="c" data-act="copy">Copy hash</button>
+    </div>
+  </template>
+
+  <footer class="fine">
+    <p>Testnet USDC. Not a legal invoice. A wrong recipient address still gets paid. Due checks the amount, the asset and the time, not who you meant to pay.</p>
+    <p>Contract <code>CA37U34JBHVRCIAIHWMZKV4BGMOWLA5Z6EJGGBS6MHOTU7L7WXH2YIHF</code>. Not audited. No admin key.</p>
+  </footer>
+</main>
+<script src="shared.js"></script>
+</body>
+</html>
