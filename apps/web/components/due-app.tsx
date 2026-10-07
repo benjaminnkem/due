@@ -26,6 +26,7 @@ import {
 import {
   STROOPS,
   close,
+  findNextOpenDue,
   formatUsdc,
   getDue,
   hasUsdcTrustline,
@@ -91,6 +92,8 @@ export function DueApp() {
   const [busy, setBusy] = useState<Busy>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  const [finding, setFinding] = useState(false);
+  const [noneOpen, setNoneOpen] = useState(false);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("due");
@@ -177,6 +180,25 @@ export function DueApp() {
     } finally {
       setBusy(null);
       await load();
+    }
+  }
+
+  async function onNextOpen() {
+    setFinding(true);
+    setNoneOpen(false);
+    try {
+      const next = await findNextOpenDue(dueId);
+      if (next === null) {
+        setNoneOpen(true);
+      } else {
+        window.history.replaceState(null, "", `?due=${next}`);
+        setDue(null);
+        setDueId(next);
+      }
+    } catch {
+      setNoneOpen(true);
+    } finally {
+      setFinding(false);
     }
   }
 
@@ -396,6 +418,18 @@ export function DueApp() {
               <p className="text-sm text-muted-foreground">
                 Closed unpaid after the deadline. The record stays on-chain.
               </p>
+            )}
+            {(due.status !== "Open" || expired) && (
+              <>
+                <Button variant="outline" disabled={finding} onClick={onNextOpen}>
+                  {finding ? "Looking…" : "Show next open due"}
+                </Button>
+                {noneOpen && (
+                  <p className="text-sm text-muted-foreground">
+                    No other open due right now.
+                  </p>
+                )}
+              </>
             )}
           </CardFooter>
         </Card>

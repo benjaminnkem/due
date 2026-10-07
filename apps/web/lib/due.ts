@@ -110,6 +110,44 @@ export async function getDue(id: number): Promise<DueRecord> {
   };
 }
 
+/**
+ * Find another due that can still be paid: open and before its deadline.
+ * Looks after `fromId` first, then wraps to the start. Ids run from 1 up with
+ * no gaps, so the first NotFound marks the end.
+ */
+export async function findNextOpenDue(fromId: number): Promise<number | null> {
+  const now = Math.floor(Date.now() / 1000);
+  const usable = (d: DueRecord) => d.status === "Open" && d.deadline >= now;
+  const BATCH = 6;
+  const MAX = 60;
+  let end = Infinity;
+  const scan = async (start: number, stop: number): Promise<number | null> => {
+    for (let id = start; id < stop && id <= MAX && id < end; id += BATCH) {
+      const ids = Array.from({ length: Math.min(BATCH, stop - id) }, (_, i) => id + i);
+      const results = await Promise.all(
+        ids.map((n) =>
+          getDue(n).then(
+            (d) => d,
+            (e: Error) => (e.message === "NotFound" ? null : undefined),
+          ),
+        ),
+      );
+      for (const [i, n] of ids.entries()) {
+        const r = results[i];
+        if (r === null) {
+          end = Math.min(end, n);
+          break;
+        }
+        if (r && usable(r)) return r.id;
+      }
+    }
+    return null;
+  };
+  const after = await scan(fromId + 1, MAX + 1);
+  if (after !== null) return after;
+  return scan(1, fromId);
+}
+
 /** True when the account holds a USDC trustline. */
 export async function hasUsdcTrustline(account: string): Promise<boolean> {
   const res = await fetch(`${HORIZON_URL}/accounts/${account}`);
