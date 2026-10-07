@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/cover.png" alt="Due: a Stellar invoice that only settles an exact, on-time payment. A paid 10 USDC due next to a refused 9 USDC attempt." width="860">
+</p>
+
 # Due
 
 Due is a Stellar invoice that only settles an exact, on-time USDC payment.
@@ -176,6 +180,9 @@ All values are public. The page holds no secret.
 contracts/due/     Soroban contract and tests
 apps/web/          Next.js page
 docs/evidence.md   contract id, wasm hash, transaction links
+docs/assets/       logo, favicon and cover image (cover.html renders cover.png)
+docs/DEMO.md       the 90-second demo script
+docs/DECISIONS.md  choices the specification did not cover
 due-build-pack/    the specification this project was built from
 ```
 

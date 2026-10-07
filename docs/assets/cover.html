@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#faf8f2; --ink:#1c1b17; --muted:#6b685d; --line:#e3dfd2; --card:#fffefa; --green:#1f6b50; --red:#b3372d; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1280px; height: 640px; background: var(--bg); color: var(--ink);
+    font-family: "Geist", "Helvetica Neue", Arial, sans-serif; overflow: hidden; }
+  .wrap { position: relative; width: 1280px; height: 640px; padding: 72px 80px; display: flex; align-items: center; justify-content: space-between; gap: 56px; }
+  .grid { position: absolute; inset: 0; background-image:
+      linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 40px 40px; opacity: .45;
+    -webkit-mask-image: radial-gradient(ellipse at 75% 50%, #000 0%, transparent 70%); mask-image: radial-gradient(ellipse at 75% 50%, #000 0%, transparent 70%); }
+  .left { position: relative; width: 560px; }
+  .brand { display: flex; align-items: center; gap: 24px; }
+  .brand img { width: 104px; height: 104px; }
+  .brand span { font-size: 112px; font-weight: 700; letter-spacing: -0.045em; line-height: 1; }
+  .tag { margin-top: 36px; font-size: 38px; line-height: 1.22; font-weight: 500; letter-spacing: -0.02em; }
+  .chips { margin-top: 34px; display: flex; gap: 10px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 17px; color: var(--muted); }
+  .chips b { font-weight: 500; border: 1px solid var(--line); background: var(--card); padding: 7px 13px; border-radius: 999px; }
+  .right { position: relative; width: 500px; display: flex; flex-direction: column; gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 28px 30px; box-shadow: 0 1px 0 rgba(28,27,23,.04), 0 18px 40px -24px rgba(28,27,23,.25); }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .ref { font-size: 17px; color: var(--muted); }
+  .ref i { font-style: normal; font-family: "Geist Mono", ui-monospace, monospace; font-size: 15px; }
+  .amt { margin-top: 6px; font-size: 54px; font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .badge { font-size: 16px; font-weight: 600; padding: 6px 14px; border-radius: 999px; }
+  .badge.ok { background: var(--green); color: #fbfaf5; }
+  .badge.no { background: #f6dedb; color: var(--red); }
+  dl { margin-top: 18px; border-top: 1px solid var(--line); }
+  .row { display: flex; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 18px; }
+  .row:last-child { border-bottom: 0; padding-bottom: 0; }
+  .row dt { color: var(--muted); } .row dd { margin: 0; font-family: "Geist Mono", ui-monospace, monospace; font-size: 16px; }
+  .attempt { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; }
+  .attempt .l { font-size: 18px; font-weight: 600; }
+  .attempt .h { margin-top: 5px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 14px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="grid"></div>
+  <div class="left">
+    <div class="brand"><img src="logo.svg" alt=""><span>Due</span></div>
+    <p class="tag">A Stellar invoice that only settles an exact, on-time payment.</p>
+    <div class="chips"><b>Soroban</b><b>USDC</b><b>Testnet</b></div>
+  </div>
+  <div class="right">
+    <div class="card">
+      <div class="top">
+        <div><div class="ref">Due #3 · <i>invoice 20</i></div><div class="amt">10 USDC</div></div>
+        <span class="badge ok">Paid</span>
+      </div>
+      <dl>
+        <div class="row"><dt>Recipient</dt><dd>GB3M…H2VK</dd></div>
+        <div class="row"><dt>Paid by</dt><dd>GC3C…IU4V</dd></div>
+      </dl>
+    </div>
+    <div class="card attempt">
+      <div><div class="l">Pay 9 USDC</div><div class="h">98df0db46e…eb81</div></div>
+      <span class="badge no">WrongAmount</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

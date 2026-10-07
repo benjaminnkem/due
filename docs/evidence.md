@@ -11,3 +11,4 @@ Paid 10 USDC (due 3, via the web page + Freighter): https://stellar.expert/explo
 Rejected 9 USDC (due 2, failed on-ledger with WrongAmount, no USDC moved): https://stellar.expert/explorer/testnet/tx/98df0db46ee67e53dad279e574bea57ccfe72593834ac6b8d63f57efc7b2eb81
 CLI simulation of the same attempt: Error(Contract, #5) = WrongAmount
 Demo: https://due-seven-beryl.vercel.app
+Spare dues opened 2026-10-07 (10 USDC each, deadline about 2026-10-28): 5 invoice 22, 6 invoice 23, 7 invoice 24, 8 invoice 25

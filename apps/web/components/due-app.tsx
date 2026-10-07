@@ -211,7 +211,11 @@ export function DueApp() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-5 px-4 py-8 sm:py-12">
       <header className="flex flex-col gap-1">
-        <h1 className="text-3xl font-semibold tracking-tight">Due</h1>
+        <h1 className="flex items-center gap-3 text-3xl font-semibold tracking-tight">
+          {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG */}
+          <img src="/logo.svg" alt="" width={36} height={36} />
+          Due
+        </h1>
         <p className="text-muted-foreground">
           A Stellar invoice that only settles an exact, on-time payment.
         </p>

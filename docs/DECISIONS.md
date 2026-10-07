@@ -32,7 +32,7 @@ Tailwind CSS v4 with shadcn/ui on Base UI (style `base-nova`), as requested. The
 
 ## Seeded dues
 
-Due 1 and due 3 were paid during testing and hold the success transactions. Due 2 is the page's seeded due. Due 4 was opened with a short deadline so the Close button can be shown on an expired due. Deadlines for the long-lived dues are 14 days from 7 October 2026.
+Due 1 and due 3 were paid during testing and hold the success transactions. Due 2 is the page's seeded due, with a deadline of 21 October 2026. Due 4 was opened with a short deadline so the Close button can be shown on an expired due. Dues 5 to 8 (`invoice 22` to `invoice 25`, 10 USDC each, deadline about 28 October 2026) were opened on 7 October as spares for the demo recording and for judges. Open a due by `?due=<id>`.
 
 ## The demo payer key is not published
 
@@ -41,3 +41,7 @@ The build pack allows publishing a testnet payer key so a judge can pay in one c
 ## Contract events use `#[contractevent]`
 
 The first version used `env.events().publish`, which is deprecated in soroban-sdk 28. The three events are declared with `#[contractevent]`, with the due id as a topic. `DueRejected` is not emitted: a refused call reverts, so an event would not be kept.
+
+## Brand assets are hand-drawn SVG
+
+The mark is a "D" with a check inside, for a payment that matched. `logo.svg` is the full mark. `favicon.svg` has a bolder, larger glyph so it stays legible at 16 and 32 pixels. `favicon.ico`, `apple-icon.png` and the Open Graph and Twitter images are rendered from these files and from `docs/assets/cover.html` with headless Chrome, and live in `apps/web/app` so Next.js serves them by convention. The cover shows a real paid due and the real rejected attempt hash from `docs/evidence.md`.
