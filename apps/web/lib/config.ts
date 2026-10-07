@@ -9,6 +9,8 @@ export const RPC_URL =
   process.env.NEXT_PUBLIC_RPC_URL || "https://soroban-testnet.stellar.org";
 export const HORIZON_URL =
   process.env.NEXT_PUBLIC_HORIZON_URL || "https://horizon-testnet.stellar.org";
+export const FRIENDBOT_URL =
+  process.env.NEXT_PUBLIC_FRIENDBOT_URL || "https://friendbot.stellar.org";
 export const NETWORK_PASSPHRASE =
   process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE || "Test SDF Network ; September 2015";
 export const SEEDED_DUE_ID = Number(process.env.NEXT_PUBLIC_SEEDED_DUE_ID || "2");
@@ -17,3 +19,4 @@ export const EXPERT = "https://stellar.expert/explorer/testnet";
 export const txUrl = (hash: string) => `${EXPERT}/tx/${hash}`;
 export const contractUrl = (id: string) => `${EXPERT}/contract/${id}`;
 export const accountUrl = (id: string) => `${EXPERT}/account/${id}`;
+export const CIRCLE_FAUCET = "https://faucet.circle.com";

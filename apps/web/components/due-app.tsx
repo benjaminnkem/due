@@ -5,6 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  CIRCLE_FAUCET,
   CONTRACT_ID,
   NETWORK_PASSPHRASE,
   SEEDED_DUE_ID,
@@ -14,16 +15,20 @@ import {
 } from "@/lib/config";
 import {
   STROOPS,
+  addUsdcTrustline,
   close,
   findNextOpenDue,
   formatUsdc,
+  fundWithFriendbot,
   getDue,
+  getReadiness,
   hasUsdcTrustline,
   isContractError,
   pay,
   payWrongAmountOnLedger,
   shortAddr,
   type DueRecord,
+  type Readiness,
   type TxOutcome,
 } from "@/lib/due";
 import { cn } from "@/lib/utils";
@@ -51,6 +56,9 @@ function walletMessage(e: unknown, fallback: string): string {
       : e && typeof e === "object" && "message" in e
         ? String((e as { message: unknown }).message)
         : "";
+  if (/account not found/i.test(raw)) {
+    return "This wallet has no testnet account yet. Fund it with Friendbot first.";
+  }
   if (/declin|reject|denied|cancel/i.test(raw)) {
     return "You declined in the wallet. Nothing was sent.";
   }
@@ -159,6 +167,99 @@ function Check({ done, title, hint }: { done: boolean; title: string; hint: stri
   );
 }
 
+function SetupPanel({
+  ready,
+  due,
+  address,
+  setup,
+  copied,
+  needUsdc,
+  onFund,
+  onTrust,
+  onCopy,
+  onRecheck,
+}: {
+  ready: Readiness;
+  due: DueRecord;
+  address: string;
+  setup: null | "fund" | "trust";
+  copied: boolean;
+  needUsdc: boolean;
+  onFund: () => void;
+  onTrust: () => void;
+  onCopy: () => void;
+  onRecheck: () => void;
+}) {
+  const small =
+    "h-auto rounded-xl border-2 border-foreground/80 bg-transparent px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-black/5 disabled:opacity-45";
+  const box = "mt-6 grid gap-2 rounded-2xl border-2 border-sun bg-[#fff8dc] p-4 text-[15.5px]";
+  if (!ready.funded) {
+    return (
+      <div className={box} role="status">
+        <p className="font-display text-lg leading-tight font-bold">
+          This wallet has no testnet account yet
+        </p>
+        <p className="text-muted-foreground">
+          A Stellar account is created separately on each network. Friendbot gives you
+          free test XLM, which also creates the account.
+        </p>
+        <div>
+          <Button className={small} disabled={setup !== null} onClick={onFund}>
+            {setup === "fund" ? "Funding…" : "Fund with Friendbot"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  if (!needUsdc) return null;
+  if (!ready.trustline) {
+    return (
+      <div className={box} role="status">
+        <p className="font-display text-lg leading-tight font-bold">Add the USDC trustline</p>
+        <p className="text-muted-foreground">
+          A wallet has to opt in to hold USDC. Your wallet will ask you to sign one small
+          transaction.
+        </p>
+        <div>
+          <Button className={small} disabled={setup !== null} onClick={onTrust}>
+            {setup === "trust" ? "Waiting for the wallet…" : "Add USDC trustline"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  if (ready.usdc < due.amount) {
+    return (
+      <div className={box} role="status">
+        <p className="font-display text-lg leading-tight font-bold">
+          You have {formatUsdc(ready.usdc)} USDC, this due needs {formatUsdc(due.amount)}
+        </p>
+        <p className="text-muted-foreground">
+          Get free testnet USDC from Circle. Choose Stellar, then paste your address:{" "}
+          <span className="font-mono text-xs break-all">{address}</span>
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a
+            className="inline-flex h-auto items-center rounded-xl border-2 border-foreground/80 px-4 py-2.5 text-sm font-semibold hover:bg-black/5"
+            href={CIRCLE_FAUCET}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open Circle faucet
+          </a>
+          <Button className={small} onClick={onCopy}>
+            {copied ? "Copied" : "Copy my address"}
+          </Button>
+          <Button className={small} onClick={onRecheck}>
+            Check again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
+
 export function DueApp() {
   const [dueId, setDueId] = useState(SEEDED_DUE_ID);
   const [due, setDue] = useState<DueRecord | null>(null);
@@ -168,6 +269,9 @@ export function DueApp() {
   const [walletError, setWalletError] = useState<string | null>(null);
   const [trustline, setTrustline] = useState<boolean | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
+  const [ready, setReady] = useState<Readiness | null>(null);
+  const [setup, setSetup] = useState<null | "fund" | "trust">(null);
+  const [copied, setCopied] = useState(false);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   const [finding, setFinding] = useState(false);
@@ -209,6 +313,23 @@ export function DueApp() {
     };
   }, [due]);
 
+  const refreshReady = useCallback(async () => {
+    if (!address) return null;
+    try {
+      const r = await getReadiness(address);
+      setReady(r);
+      return r;
+    } catch {
+      setReady(null);
+      return null;
+    }
+  }, [address]);
+
+  useEffect(() => {
+    setReady(null);
+    if (address) void refreshReady();
+  }, [address, refreshReady]);
+
   const checkNetwork = useCallback(async () => {
     const p = await walletPassphrase();
     const bad = p !== null && p !== NETWORK_PASSPHRASE;
@@ -240,7 +361,11 @@ export function DueApp() {
     : 0n;
 
   const canAct =
-    !!address && !!due && !busy && !wrongNetwork && trustline !== false;
+    !!address && !!due && !busy && !setup && !wrongNetwork && trustline !== false;
+  const payerReady =
+    !!ready && ready.funded && ready.trustline && !!due && ready.usdc >= due.amount;
+  const canPay = canAct && payerReady;
+  const canClose = canAct && !!ready?.funded;
 
   async function run(
     label: string,
@@ -261,6 +386,53 @@ export function DueApp() {
     } finally {
       setBusy(null);
       await load();
+      await refreshReady();
+    }
+  }
+
+  async function onFund() {
+    if (!address) return;
+    setWalletError(null);
+    setSetup("fund");
+    try {
+      await fundWithFriendbot(address);
+      // Horizon can lag a few seconds behind Friendbot, so look a few times.
+      for (let i = 0; i < 6; i++) {
+        const r = await refreshReady();
+        if (r?.funded) break;
+        await new Promise((res) => setTimeout(res, 1200));
+      }
+    } catch (e) {
+      setWalletError(walletMessage(e, "Friendbot could not fund this account."));
+    } finally {
+      setSetup(null);
+    }
+  }
+
+  async function onTrust() {
+    if (!address) return;
+    setWalletError(null);
+    if (!(await checkNetwork())) return;
+    setSetup("trust");
+    try {
+      const out = await addUsdcTrustline(address, (xdr) => sign(xdr, address), () => {});
+      if (!out.ok) setWalletError(out.error ?? "The trustline was not added.");
+    } catch (e) {
+      setWalletError(walletMessage(e, "The trustline was not added."));
+    } finally {
+      setSetup(null);
+      await refreshReady();
+    }
+  }
+
+  async function onCopyAddress() {
+    if (!address) return;
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard blocked: the address is still shown */
     }
   }
 
@@ -515,10 +687,25 @@ export function DueApp() {
               </Alert>
             )}
 
+            {address && ready && !wrongNetwork && (open || lapsed) && (
+              <SetupPanel
+                ready={ready}
+                due={due}
+                address={address}
+                setup={setup}
+                copied={copied}
+                needUsdc={open}
+                onFund={onFund}
+                onTrust={onTrust}
+                onCopy={onCopyAddress}
+                onRecheck={refreshReady}
+              />
+            )}
+
             <div className="mt-6 grid gap-2.5">
               {open && (
                 <>
-                  <Button className={ctaMain} disabled={!canAct} onClick={onPay}>
+                  <Button className={ctaMain} disabled={!canPay} onClick={onPay}>
                     {busy === "prepare"
                       ? "Preparing…"
                       : busy === "wallet"
@@ -530,7 +717,7 @@ export function DueApp() {
                   <Button
                     variant="outline"
                     className={ctaQuiet}
-                    disabled={!canAct}
+                    disabled={!canPay}
                     onClick={onPayWrong}
                   >
                     Try paying {formatUsdc(wrongAmount)} USDC
@@ -539,7 +726,7 @@ export function DueApp() {
               )}
               {lapsed && (
                 <>
-                  <Button className={ctaMain} disabled={!canAct} onClick={onClose}>
+                  <Button className={ctaMain} disabled={!canClose} onClick={onClose}>
                     {busy ? "Working…" : "Close due"}
                   </Button>
                   {nextButton}
@@ -552,7 +739,9 @@ export function DueApp() {
               {open && !address && "Connect a testnet wallet to pay."}
               {open &&
                 address &&
+                payerReady &&
                 "The money goes straight from you to the recipient in one transaction. The contract keeps nothing."}
+              {open && address && !payerReady && "Finish the step above, then you can pay."}
               {lapsed &&
                 "Nobody paid before the deadline, so anyone can close this due. Nothing was locked, so nothing is refunded."}
               {paid && "Paid in one transaction. USDC went from the payer to the recipient, and the contract kept nothing."}
