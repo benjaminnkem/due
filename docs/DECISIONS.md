@@ -28,7 +28,7 @@ The build pack says Freighter first. Loading the kit's default module set pulls 
 
 ## Styling
 
-Tailwind CSS v4 with shadcn/ui on Base UI (style `base-nova`), as requested. The theme is an off-white background, near-black text and a single green accent, with light mode only. Components used: Alert, Badge, Button, Card, Separator, Skeleton, Input and Label.
+Tailwind CSS v4 with shadcn/ui on Base UI (style `base-nova`), as requested, with light mode only. Three directions were prototyped in `design/` (a carbon-copy invoice pad, an engineering drawing sheet, and a mobile-first slip) and the slip was chosen: a deep-green hero with the amount as the largest thing on the page, a yellow pay button, and three checks (asset, amount, time) that tick when a due is paid. Type is Bricolage Grotesque for display and Hanken Grotesk for text. The page uses shadcn's Alert, Button and Skeleton. The other direction files stay in `design/` for reference and are not deployed.
 
 ## Seeded dues
 
