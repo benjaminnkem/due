@@ -203,6 +203,7 @@ due-build-pack/    the specification this project was built from
 - It is not an anchor and does not cash out to a bank or a local currency.
 - The contract has not been audited.
 - It is testnet only. Do not point it at mainnet or real funds.
+- Paying needs a desktop browser with the Freighter extension. A phone can read a due but cannot sign a payment from the page.
 - The page reads dues one at a time. It has no list of dues and no history beyond the current session, because events are not indexed.
 
 ## Built for

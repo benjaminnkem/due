@@ -29,7 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { connect, disconnect, sign, walletPassphrase } from "@/lib/wallet";
 
-type Busy = null | "wallet" | "ledger";
+type Busy = null | "prepare" | "wallet" | "ledger";
 type Attempt = {
   key: number;
   label: string;
@@ -42,6 +42,24 @@ const ctaMain =
   "h-auto w-full rounded-2xl border-2 border-sun bg-sun px-5 py-[17px] font-display text-lg font-bold tracking-tight text-[#2a2200] shadow-[0_3px_0_var(--color-sun-deep)] hover:bg-[#ffdb62] active:translate-y-0.5 active:shadow-[0_1px_0_var(--color-sun-deep)] disabled:opacity-45";
 const ctaQuiet =
   "h-auto w-full rounded-2xl border-2 border-line bg-transparent px-5 py-4 font-display text-base font-semibold text-foreground hover:bg-black/5 disabled:opacity-45";
+
+/** Turn whatever a wallet throws (Error, plain object, string) into a sentence. */
+function walletMessage(e: unknown, fallback: string): string {
+  const raw =
+    typeof e === "string"
+      ? e
+      : e && typeof e === "object" && "message" in e
+        ? String((e as { message: unknown }).message)
+        : "";
+  if (/declin|reject|denied|cancel/i.test(raw)) {
+    return "You declined in the wallet. Nothing was sent.";
+  }
+  return raw || fallback;
+}
+
+/** Freighter's modal reports a closed popup as code -1. That is not an error. */
+const closedPopup = (e: unknown) =>
+  !!e && typeof e === "object" && (e as { code?: unknown }).code === -1;
 
 function Logo() {
   return (
@@ -204,7 +222,7 @@ export function DueApp() {
       setAddress(await connect());
       await checkNetwork();
     } catch (e) {
-      setWalletError((e as Error).message || "The wallet did not connect");
+      if (!closedPopup(e)) setWalletError(walletMessage(e, "The wallet did not connect"));
     }
   }
 
@@ -228,15 +246,18 @@ export function DueApp() {
     label: string,
     action: (addr: string) => Promise<TxOutcome>,
   ) {
-    if (!address) return;
+    if (!address || busy) return;
     setWalletError(null);
-    if (!(await checkNetwork())) return;
+    setBusy("prepare"); // blocks a second click while we look up the account and simulate
+    if (!(await checkNetwork())) {
+      setBusy(null);
+      return;
+    }
     try {
       const outcome = await action(address);
       setAttempts((a) => [{ key: Date.now(), label, outcome }, ...a]);
     } catch (e) {
-      const msg = (e as Error).message || "The wallet declined";
-      setWalletError(msg);
+      setWalletError(walletMessage(e, "Something went wrong. Nothing was sent."));
     } finally {
       setBusy(null);
       await load();
@@ -438,7 +459,9 @@ export function DueApp() {
               <AlertDescription>
                 {loadError === "NotFound"
                   ? "Check the due number in the link."
-                  : loadError}
+                  : /fetch|network|timeout|abort/i.test(loadError)
+                    ? "The Stellar testnet did not answer. Check your connection and try again."
+                    : loadError}
               </AlertDescription>
             </Alert>
             {loadError === "NotFound" ? (
@@ -496,11 +519,13 @@ export function DueApp() {
               {open && (
                 <>
                   <Button className={ctaMain} disabled={!canAct} onClick={onPay}>
-                    {busy === "wallet"
-                      ? "Waiting for the wallet…"
-                      : busy === "ledger"
-                        ? "Waiting for the ledger…"
-                        : `Pay ${amountText} USDC`}
+                    {busy === "prepare"
+                      ? "Preparing…"
+                      : busy === "wallet"
+                        ? "Waiting for the wallet…"
+                        : busy === "ledger"
+                          ? "Waiting for the ledger…"
+                          : `Pay ${amountText} USDC`}
                   </Button>
                   <Button
                     variant="outline"
